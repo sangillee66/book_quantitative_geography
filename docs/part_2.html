@@ -420,7 +420,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/">sf</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-tmap/tmap">tmap</a></span><span class="op">)</span></span></code><button title="클립보드 복사" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>우선 속성 데이터를 불러와 정리한다. 전자는 출생과 사망 변수가 모두 포함되어 있고, 후자에는 출생 관련 변수만 들어 있다.</p>
+<p>우선 속성 데이터를 불러와 정리한다. 전자는 출생과 사망 변수가 모두 포함되어 있고, 후자에는 출생 관련 변수만 들어 있다. 후자만 사용해도 무방한데, 사망 변수도 넣고 싶을 뿐만 아니라 후자에는 <code>mom_age</code> 변수가 없어서 어쩔 수 없이 합쳐야 한다.</p>
 <div class="cell">
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="va">map_data_2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readxl.tidyverse.org/reference/read_excel.html">read_excel</a></span><span class="op">(</span><span class="st">"D:/My R/Population Geography/4 Population Dynamics/Vital_Map_Data_Sigungu_2023.xlsx"</span><span class="op">)</span></span>
 <span><span class="va">vital_data_2023</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readxl.tidyverse.org/reference/read_excel.html">read_excel</a></span><span class="op">(</span><span class="st">"D:/My R/Quantitative Geography/kor_vital_data_2023.xlsx"</span><span class="op">)</span></span></code><button title="클립보드 복사" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -446,7 +446,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span>    SMR <span class="op">=</span> <span class="va">SMR1</span></span>
 <span>  <span class="op">)</span></span></code><button title="클립보드 복사" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>엑셀과 rds 포맷으로 저장한다.</p>
+<p>엑셀과 rds 포맷으로 저장해 둔다.</p>
 <div class="cell">
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r code-with-copy"><code class="sourceCode R"><span><span class="fu"><a href="https://docs.ropensci.org/writexl/reference/write_xlsx.html">write_xlsx</a></span><span class="op">(</span></span>
 <span>  <span class="va">df_kr_2023</span>, <span class="st">"data/df_kr_2023.xlsx"</span></span>

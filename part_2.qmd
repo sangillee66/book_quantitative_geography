@@ -27,7 +27,7 @@ library(sf)
 library(tmap)
 ```
 
-우선 속성 데이터를 불러와 정리한다. 전자는 출생과 사망 변수가 모두 포함되어 있고, 후자에는 출생 관련 변수만 들어 있다.
+우선 속성 데이터를 불러와 정리한다. 전자는 출생과 사망 변수가 모두 포함되어 있고, 후자에는 출생 관련 변수만 들어 있다. 후자만 사용해도 무방한데, 사망 변수도 넣고 싶을 뿐만 아니라 후자에는 `mom_age` 변수가 없어서 어쩔 수 없이 합쳐야 한다.
 
 ```{r}
 map_data_2023 <- read_excel("D:/My R/Population Geography/4 Population Dynamics/Vital_Map_Data_Sigungu_2023.xlsx")
@@ -57,7 +57,7 @@ df_kr_2023 <- vital_data_2023 |>
   )
 ```
 
-엑셀과 rds 포맷으로 저장한다.
+엑셀과 rds 포맷으로 저장해 둔다.
 
 ```{r}
 write_xlsx(
