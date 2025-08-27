@@ -13,4 +13,67 @@ execute:
   error: false
   freeze: auto
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
+
+이 장에서 예제로 사용할 데이터를 불러와 정리한다. 필수적인 패키지를 불러온다.
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(writexl)
+library(sf)
+library(tmap)
+```
+
+우선 속성 데이터를 불러와 정리한다. 전자는 출생과 사망 변수가 모두 포함되어 있고, 후자에는 출생 관련 변수만 들어 있다.
+
+```{r}
+map_data_2023 <- read_excel("D:/My R/Population Geography/4 Population Dynamics/Vital_Map_Data_Sigungu_2023.xlsx")
+vital_data_2023 <- read_excel("D:/My R/Quantitative Geography/kor_vital_data_2023.xlsx")
+```
+
+두 데이터를 결합해 완전한 데이터를 만든다.
+
+```{r}
+df_kr_2023 <- vital_data_2023 |> 
+  left_join(
+    map_data_2023 |> select(Region_CD, Death, CDR, MOM_age, SMR1), 
+    join_by(SGG_CD == Region_CD)
+  ) |> 
+  relocate(
+    MOM_age, .before = TFR,
+  ) |> 
+  rename(
+    region = Region, 
+    sudo = Sudo,
+    births = Births,
+    increase = NIncrease, 
+    p_f1549 = P_F1549,
+    mom_age = MOM_age, 
+    deaths = Death, 
+    SMR = SMR1
+  )
+```
+
+엑셀과 rds 포맷으로 저장한다.
+
+```{r}
+write_xlsx(
+  df_kr_2023, "data/df_kr_2023.xlsx"
+)
+write_rds(
+  df_kr_2023, "data/df_kr_2023.rds"
+)
+```
+
+형상 데이터를 불러온다.
+
+```{r}
+sf_sd <- read_sf("D:/My R/Korean Administrative Areas/행정구역 셰이프 파일/3 Generalization/2023_2Q/SIDO_2023_2Q_GEN_0050.shp", options = "ENCODING=CP949")
+sf_sgg <- read_sf("D:/My R/Korean Administrative Areas/행정구역 셰이프 파일/3 Generalization/2023_2Q/SIGUNGU1_2023_2Q_GEN_0050.shp", options = "ENCODING=CP949")
+sf_sd_line <- read_sf("D:/My R/Korean Administrative Areas/행정구역 셰이프 파일/3 Generalization/2023_2Q/SIDO_Polyline_2023_2Q_GEN_0050.shp", options = "ENCODING=CP949")
+sf_box_seohae <- sf_sd_line <- read_sf("D:/My R/Korean Administrative Areas/행정구역 셰이프 파일/3 Generalization/2023_2Q/BBOX_Seohae3_2023_2Q_GEN_0050.shp", options = "ENCODING=CP949")
+sf_box_ulleung <- sf_sd_line <- read_sf("D:/My R/Korean Administrative Areas/행정구역 셰이프 파일/3 Generalization/2023_2Q/BBOX_Ulleung_2023_2Q_GEN_0050.shp", options = "ENCODING=CP949")
+```
