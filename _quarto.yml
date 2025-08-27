@@ -1,0 +1,69 @@
+project:
+  type: book
+  output-dir: docs
+
+lang: ko
+
+book:
+  title: "Quartitative Geography"
+  author: "Sang-Il Lee"
+  date: last-modified
+  bread-crumbs: false
+  chapters:
+    - index.qmd
+    - part: part_1.qmd
+      chapters: 
+        - 1_1_statistical_methods.qmd
+        - 1_2_data_exploration.qmd
+    - part: part_2.qmd
+      chapters: 
+        - 2_1_descriptive_statistics.qmd
+        - 2_2_data_exploration.qmd
+    - part: part_3.qmd
+      chapters: 
+        - 3_1_probability.qmd
+        - 3_2_sampling_distribution.qmd
+        - 3_3_parameter_estimation.qmd
+    - part: part_4.qmd
+      chapters: 
+        - 4_1_overview.qmd
+        - 4_2_parametric.qmd
+        - 4_3_non_parametric.qmd
+        - 4_4_anova.qmd
+    - part: part_5.qmd
+      chapters: 
+        - 5_1_correlation.qmd
+        - 5_2_simple_regression.qmd
+        - 5_3_multiple_regression.qmd
+    - part: part_6.qmd
+      chapters: 
+        - 6_1_overview.qmd
+        - 6_2_logistic_regression.qmd
+        - 6_3_poisson_regression.qmd
+    - part: part_7.qmd
+      chapters: 
+        - 7_1_pca_fa.qmd
+        - 7_2_cca.qmd
+        - 7_3_discriminant_analysis.qmd
+        - 7_4_cluster_analysis.qmd
+    - part: part_8.qmd
+      chapters: 
+        - 8_1_overview.qmd
+        - 8_2_decision_tree.qmd
+        - 8_3_random_forest.qmd
+        - 8_4_svm.qmd
+        - 8_5_ann.qmd
+
+lightbox: true
+
+execute:
+  freeze: auto
+
+format:
+  html:
+    theme: [cosmo, custom_basic_pretendard.scss]
+    css: styles.css
+    toc: true
+
+editor: visual
+
