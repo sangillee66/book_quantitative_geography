@@ -1,0 +1,11 @@
+dependencies:
+  - name: gwalkr
+    version: 1.0.0
+    src: htmlwidgets/lib/gwalkr
+    script:
+      - gwalkr-app.iife.js
+  - name: gwalkr_styles
+    version: 1.0.0
+    src: htmlwidgets
+    stylesheet:
+      - style.css

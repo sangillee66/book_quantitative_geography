@@ -1,5 +1,5 @@
 ---
-title: "기술통계와 데이터 탐색"
+title: "기술통계와 탐색적 데이터 분석"
 author: Sang-Il Lee
 date-modified: last-modified
 number-sections: true
@@ -55,6 +55,12 @@ df_kr_2023 <- vital_data_2023 |>
     deaths = Death, 
     SMR = SMR1
   )
+# 출생 관련 변수에 한정
+df_kr_2023 <- df_kr_2023 |> 
+  select(
+    -c(deaths, CDR, SMR)
+  )
+
 reactable(
   df_kr_2023,
   defaultColDef = colDef(
@@ -68,8 +74,7 @@ reactable(
     CDR = colDef(format = colFormat(digits = 3)), 
     SMR = colDef(format = colFormat(digits = 3)),
     births = colDef(format = colFormat(separators = TRUE)),
-    increase = colDef(format = colFormat(separators = TRUE)),
-    deaths = colDef(format = colFormat(separators = TRUE))
+    increase = colDef(format = colFormat(separators = TRUE))
   )
 )
 ```

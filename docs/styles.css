@@ -1,0 +1,16 @@
+/* css styles */
+
+.author {
+    font-size: 2em;
+}
+
+@font-face {
+  font-family: 'NanumSquare';
+  src: url('fonts/NanumSquareR.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'NanumSquare', sans-serif;
+}

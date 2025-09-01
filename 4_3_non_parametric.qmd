@@ -17,3 +17,57 @@ editor: visual
 editor_options: 
   chunk_output_type: console
 ---
+
+## 단일표본 중위수 검정
+
+```{r}
+library(tidyverse)
+
+commu_time <- sample(c(22, 23, 25, 27, 27, 28, 28, 29, 29, 31, 33, 37, 37, 38, 39, 42, 43, 43, 43, 58))
+
+m0 <- 30
+
+d <- commu_time - m0
+d
+
+d_abs <- abs(d)
+d_abs
+
+ranks <- rank(d_abs)
+ranks
+
+signed_ranks <- ranks * sign(d)
+signed_ranks
+
+W <- sum(ranks[d > 0])
+W
+
+df_W <- tibble(
+  commu_time, d, d_abs, ranks, signed_ranks
+)
+df_W
+
+df_W |> 
+  group_by(signed_ranks >= 0) |> 
+  summarize(
+    sum_rank = sum(signed_ranks)
+  )
+
+# 부호 검정
+
+df_W |> summarize(
+  mean(commu_time < 30)
+)
+  
+Z_W = (mean(df_W$commu_time < 30) - 0.5)/sqrt(0.45*0.55/20)
+Z_W
+P_Z_W = 2*(pnorm(Z_W))
+P_Z_W
+
+wilcox.test(commu_time, mu = 30)
+
+wilcox <- (60.5 - 20*21/4)/sqrt(20*21*41/24)
+wilcox
+
+2*(pnorm(wilcox))
+```

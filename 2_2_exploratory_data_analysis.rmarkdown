@@ -1,0 +1,543 @@
+---
+title: "탐색적 데이터 분석"
+author: Sang-Il Lee
+date-modified: last-modified
+number-sections: true
+format: 
+  html: 
+    toc: true
+code-link: true
+code-copy: true
+lightbox: true
+execute: 
+  warning: false
+  error: false
+  freeze: auto
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## EDA의 정의와 필요성
+
+### Datasaurus 데이터
+
+왜 EDA가 중요한 가를 얘기할 때 예시로 가장 많이 등장하는 데이터가 [Datasaurus dozen](https://en.wikipedia.org/wiki/Datasaurus_dozen)이라는 데이터이다. 이 데이터는 위키피디어의 [데이터사이언스](https://en.wikipedia.org/wiki/Data_science)에 나타나 있기도 하다. 이 데이터는 [**datasauRus**](https://jumpingrivers.github.io/datasauRus/) 패키지에서 이용가능하다.
+
+
+```{r}
+library(tidyverse)
+library(summarytools)
+library(datasauRus)
+library(flextable)
+library(reactable)
+library(broom)
+```
+
+
+우선 데이터를 살펴본다. [**summarytools**](https://github.com/dcomtois/summarytools?tab=readme-ov-file) 패키지의 `dfsummary()` 함수를 사용한다. `dataset` 변수에 13개의 서로다른 데이터셋 이름이 들어가 있고, 각 데이터셋은 142개의 케이스와 x, y의 두 변수로 이루어져 있음을 알 수 있다.
+
+
+```{r}
+datasaurus_dozen |> 
+  dfSummary(max.distinct.values = 13) |> stview() 
+```
+
+
+`dataset` 컬럼의 첫 글자를 [**stringr**](https://stringr.tidyverse.org/) 패키지의 `str_to_title()` 함수를 이용해 대문자로 바꾼다.
+
+
+```{r}
+datasaurus_dozen <- datasaurus_dozen |> 
+  mutate(dataset = str_to_title(dataset))
+```
+
+
+요약 테이블을 만든다.
+
+
+```{r}
+summ_tbl <- datasaurus_dozen |> 
+  summarize(
+    mean_x = mean(x, na.rm = TRUE), 
+    mean_y = mean(y, na.rm = TRUE),
+    sd_x = sd(x, na.rm = TRUE), 
+    sd_y = sd(y, na.rm = TRUE),
+    cor_xy = cor(x, y),
+    .by = dataset
+  ) 
+
+reg_res <- datasaurus_dozen |> 
+  group_by(dataset) |> 
+  group_modify(~ tidy(lm(y ~ x, data = .x))) |> 
+  select(dataset, term, estimate) |> 
+  pivot_wider(names_from = term, values_from = estimate) |> 
+  rename(intercept = `(Intercept)`, slope = x)
+  
+summ_tbl <- summ_tbl |> left_join(
+  reg_res, join_by(dataset)
+) |> rename(
+    "Dataset"     = dataset,
+    "Mean x"      = mean_x,
+    "Mean y"      = mean_y,
+    "Std Dev x"   = sd_x,
+    "Std Dev y"   = sd_y,
+    "Corr x y"    = cor_xy,
+    "Intercept"   = intercept,
+    "Coefficient" = slope
+  ) |> 
+  arrange(Dataset)
+
+summ_tbl
+```
+
+
+이것을 [**gt**](https://gt.rstudio.com/) 패키지를 이용해 깨끗한 표로 정리하면 다음과 같다.
+
+
+```{r}
+library(gt)
+gt_tbl <- summ_tbl |> 
+  gt() |> 
+  # 그룹 헤더(스패너)
+  tab_spanner(
+    label = "Summary Statistics",
+    id    = "sumstat",
+    columns = c(`Mean x`, `Mean y`, `Std Dev x`, `Std Dev y`, `Corr x y`)
+  ) |> 
+  tab_spanner(
+    label = "Regression Results",
+    id    = "regres",
+    columns = c(`Intercept`, `Coefficient`)
+  ) |> 
+  # 숫자 포맷
+  fmt_number(columns = -Dataset, decimals = 3) |> 
+  # 헤더(모든 컬럼 라벨 + 스패너) : 청색 바탕/흰 글씨
+  tab_style(
+    style = list(
+      cell_fill(color = "#1f4e79"),
+      cell_text(color = "white", weight = "bold")
+    ),
+    locations = list(
+      cells_column_labels(columns = everything()),
+      cells_column_spanners(spanners = c("sumstat", "regres"))
+    )
+  ) |> 
+  # Dataset 컬럼(본문 셀): 옅은 초록
+  tab_style(
+    style = cell_fill(color = "#d9ead3"),
+    locations = cells_body(columns = Dataset)
+  ) |> 
+  # Summary Statistics 컬럼(본문 셀): 하늘색
+  tab_style(
+    style = cell_fill(color = "#d0e7ff"),
+    locations = cells_body(columns = c(`Mean x`, `Mean y`, `Std Dev x`, `Std Dev y`, `Corr x y`))
+  ) |> 
+  # Regression Results 컬럼(본문 셀): 회색
+  tab_style(
+    style = cell_fill(color = "#e0e0e0"),
+    locations = cells_body(columns = c(`Intercept`, `Coefficient`))
+  ) |> 
+  # 가독성 옵션(선택)
+  opt_row_striping()
+gt_tbl
+```
+
+
+`gtsave()` 함수를 활용해 고해상도로 저장한다.
+
+
+```{r}
+gt_tbl |> 
+  gtsave(
+    "table.png", 
+    vwidth = 2000, 
+    vheight = 1200,
+    zoom = 2
+  )
+```
+
+
+이제 13개 데이터셋의 산포도를 작성한다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.8
+#| fig-dpi: 600
+ggplot(datasaurus_dozen) +
+  geom_point(aes(x = x, y = y)) + 
+  facet_wrap(~ dataset) +
+  theme(
+    strip.text = element_text(size = 14)
+  ) +
+  labs(caption = "SANG-IL LEE, Geography Education at SNU, 2025")
+```
+
+
+## 우리나라 시군구 출산력 데이터에 대한 EDA
+
+### 데이터 불러오기
+
+
+```{r}
+df_kr <- read_rds("data/df_kr_2023.rds")
+df_kr
+```
+
+
+glimpse() 함수로 본다.
+
+
+```{r}
+df_kr |> glimpse()
+```
+
+
+[**reactable**](https://glin.github.io/reactable/) 패키지를 활용해 기본적인 인터렉티브 테이블을 만든다. 다양한 인수를 조정하여 원하는 형태의 테이블을 만들어 낸다.
+
+
+```{r}
+df_kr |> 
+  reactable(
+    searchable = TRUE,
+    theme = reactableTheme(
+      style = list(
+        fontSize = "13px"
+      )
+    ),
+    columns = list(
+      SGG_NM = colDef(sticky = "left"),
+      SD_NM = colDef(sticky = "left"),
+      CBR = colDef(format = colFormat(digits= 3)), 
+      RNI = colDef(format = colFormat(digits= 3)), 
+      GFR = colDef(format = colFormat(digits= 3)),
+      p_f1549 = colDef(format = colFormat(digits= 3)),
+      TFR = colDef(format = colFormat(digits= 3)), 
+      CDR = colDef(format = colFormat(digits= 3)), 
+      SMR = colDef(format = colFormat(digits= 3)), 
+      births = colDef(format = colFormat(separators = TRUE)), 
+      deaths = colDef(format = colFormat(separators = TRUE)), 
+      increase = colDef(format = colFormat(separators = TRUE))
+    )
+  )
+```
+
+
+### 기술 통계
+
+다양한 기술 통계를 한꺼번에 보여줄 수 있는 가장 좋은 방법은 [**summarytools**](https://github.com/dcomtois/summarytools) 패키지를 사용하는 것으로 보인다. `descr()` 함수를 사용한다.
+
+
+```{r}
+library(summarytools)
+df_kr |> descr() |> 
+  print(method = "render", omit.headings = TRUE)
+```
+
+
+<br>
+
+결과를 `reactable()` 함수와 연결할 수 있다. 이후 포맷팅을 할 수 있다.
+
+
+```{r}
+library(knitr)
+df_kr |> descr() |> reactable()
+```
+
+
+<br>
+
+`dfSummary()` 함수를 사용하면 보다 다양한 결과물을 얻을 수 있다.
+
+
+```{r}
+df_kr |> dfSummary() |> print(method = "render", omit.headings = TRUE)
+```
+
+
+### 시각화
+
+#### 일변량 시각화
+
+TFR 변수에 몇 가지 시각화 기법을 적용한다. 히스토그램과 도수분포다각형을 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+ggplot(data = df_kr, aes(x = TFR)) +
+  geom_histogram(binwidth = 0.05, color = "white") +
+  geom_freqpoly(binwidth = 0.05, color = "red") +
+  labs(
+    x = "TFR", y = "Count",
+    title = "Total Fertility Rate (TFR) in South Korea, 2023", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025", 
+  ) 
+```
+
+
+히스토그램 위에 커널밀도플롯을 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+ggplot(data = df_kr, aes(x = TFR)) +
+  geom_histogram(
+    aes(y = after_stat(density)),
+    binwidth = 0.05, color = "black", fill = "white") +
+  geom_density(alpha = .2, fill = "#FF6666") +
+  labs(
+    x = "TFR", y = "Count",
+    title = "Total Fertility Rate (TFR) in South Korea, 2023", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025", 
+  ) 
+```
+
+
+히스토그램 위에 정규분포곡선을 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+ggplot(data = df_kr, aes(x = TFR)) +
+  geom_histogram(
+    aes(y = after_stat(density)),
+    binwidth = 0.05, color = "black", fill = "white") +
+  stat_function(
+    fun = dnorm, color = "red",  
+    args = list(
+      mean = mean(df_kr$TFR, na.rm = TRUE),
+      sd = sd(df_kr$TFR, na.rm = TRUE)
+    ) 
+  ) +
+  labs(
+    x = "TFR", y = "Density",
+    title = "Total Fertility Rate (TFR) in South Korea, 2023", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025", 
+  ) 
+```
+
+
+권역별 박스플롯을 제작한다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+box <- ggplot(
+  data = df_kr, 
+  aes(x = fct_reorder(region, TFR, median), 
+      y = TFR, 
+      fill = fct_reorder(region, TFR, median))
+  ) +
+  geom_boxplot(outlier.size = 2) +
+  stat_summary(fun = mean, geom = "point", shape = 23) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    x = "권역", y = "TFR",
+    title = "Total Fertility Rate (TFR) in South Korea, 2023", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025" 
+  ) +
+  theme(legend.position = "none")
+box
+```
+
+
+저장한다.
+
+
+```{r}
+ggsave(scale = 2, "box.png", box, width = 12, height = 12 * 0.618, dpi = 600)
+```
+
+
+권역별 바이올린플롯(violin plot)을 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+ggplot(
+  data = df_kr, 
+  aes(x = fct_reorder(region, TFR, median), 
+      y = TFR, 
+      fill = fct_reorder(region, TFR, median))
+  ) +
+  geom_violin() +
+  geom_boxplot(fill = "white", width = 0.1, outlier.size = 2) +
+  stat_summary(fun = mean, geom = "point", shape = 23) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    x = "권역", y = "TFR",
+    title = "Total Fertility Rate (TFR) in South Korea, 2023", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025" 
+  ) +
+  theme(legend.position = "none")
+```
+
+
+[**ggridges**](https://wilkelab.org/ggridges/) 패키지를 활용하여 리지라인(ridgeline) 플롯을 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+library(ggridges)
+ggridge <- ggplot(data = df_kr, aes(x = TFR, y = SD_CD, fill = region)) +
+  geom_density_ridges(alpha = 0.7) +
+  theme(legend.position = "none") +
+  labs(
+    y = "Region", 
+    caption = "SANG-IL LEE, Geography Education at SNU, 2025")
+ggridge
+```
+
+
+저장한다.
+
+
+```{r}
+ggsave("ggridge.png", ggridge, width = 12, height = 12*0.618, dpi = 600)
+```
+
+
+#### 이변량 시각화
+
+TFR과 CBR 간의 산포도를 제작한다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.618
+#| fig-dpi: 600
+corr <- cor(df_kr$TFR, df_kr$CBR) |> round(4)
+ggplot(data = df_kr, aes(x = TFR, y = CBR)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "tomato") +
+  annotate(
+    geom = "text", x = 0.5, y = 9.5, 
+    label = bquote("Pearson's "*italic(r) == .(corr))
+  ) + 
+  labs(caption = "SANG-IL LEE, Geography Education at SNU, 2025")
+```
+
+
+#### 다변량 시각화
+
+[**ggcorrplot**](https://www.sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2) 패키지를 활용하여 상관관계 매트릭스를 제작한다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 1
+#| fig-dpi: 600
+cor_data <- df_kr |> 
+  select(
+    CBR, RNI, GFR, p_f1549, mom_age, TFR
+  ) 
+cor_mat <- cor(cor_data)
+
+library(ggcorrplot)
+ggcorrplot(
+  cor_mat, 
+  hc.order = TRUE, 
+  tl.cex = 18, 
+  lab = TRUE, 
+  lab_size = 6, 
+  outline.color = "gray80", 
+  colors = c("#6D9EC1", "white", "#E46726"), digits = 3) + 
+  labs(caption = "SANG-IL LEE, Geography Education at SNU, 2025")
+```
+
+
+[**GGally**](https://ggobi.github.io/ggally/) 패키지를 사용하면 좀 더 복잡한 플롯을 제작할 수 있다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.8
+#| fig-dpi: 600
+library(GGally)
+ggpairs(cor_data) + 
+  theme(
+    axis.line = element_blank(), 
+    axis.text = element_blank(), 
+    axis.ticks = element_blank(), 
+    aspect.ratio = 3/4,
+    plot.margin=grid::unit(c(0,0,0,0), "mm")
+  ) + labs(caption = "SANG-IL LEE, Geography Education at SNU, 2025")
+```
+
+
+[**scatterplot3d**](https://cran.r-project.org/web/packages/scatterplot3d/refman/scatterplot3d.html) 패키지를 활용하여 3차원 산점도를 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 1
+#| fig-dpi: 600
+library(scatterplot3d)
+with(cor_data, 
+     {scatterplot3d(x = TFR, y = CBR, p_f1549, 
+                    main = "3-D Scatterplot", 
+                    pch = 16,asp = 0.03
+                    )
+     }
+     )
+```
+
+
+[**echarts4r**](https://echarts4r.john-coene.com/) 패키지를 활용하여 입체적인 인터랙티브 산점도를 그린다.
+
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 1
+#| fig-dpi: 600
+library(echarts4r)
+df_kr |> mutate(F_NM = str_c(SD_NM, SGG_NM, sep = " ")) |> 
+  group_by(region) |> 
+  e_charts(TFR) |> 
+  e_scatter_3d(CBR, p_f1549, bind = F_NM, 
+               wireframe = list(show = TRUE)) |> 
+  e_x_axis_3d(name = "TFR") |> 
+  e_y_axis_3d(name = "CBR") |> 
+  e_z_axis_3d(name = "p_f1549") |> 
+  e_tooltip(
+    formatter = htmlwidgets::JS("
+      function(params){
+        return '지역: ' + params.name + '<br>' + 
+               'TFR: ' + params.value[0].toFixed(3) + '<br>' +
+               'CBR: ' + params.value[1].toFixed(3) + '<br>' +
+               'p_f1549: ' + params.value[2].toFixed(3);
+      }
+    ")    
+  ) |> 
+  e_legend(show = TRUE)
+```
+
+
+## 완벽한 EDA 도구: GWalkR 패키지
+
+현재 나와 있는 도구 중 EDA를 완벽히 구현하고 있는 것은 아마도 [**GWalkR**](https://docs.kanaries.net/GWalkR) 패키지일 것이다. RStudio의 Viewer 창에서 다양한 EDA를 실행해 볼 수 있다.
+
+
+```{r}
+library(GWalkR)
+gwalkr(df_kr)
+```
+
+
+Python 용인 [**WyGWalker**](https://docs.kanaries.net/pygwalker) 역시 존재한다.
+

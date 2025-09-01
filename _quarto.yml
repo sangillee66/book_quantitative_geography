@@ -14,11 +14,11 @@ book:
     - part: part_1.qmd
       chapters: 
         - 1_1_statistical_methods.qmd
-        - 1_2_data_exploration.qmd
+        - 1_2_quantitative_geography.qmd
     - part: part_2.qmd
       chapters: 
         - 2_1_descriptive_statistics.qmd
-        - 2_2_data_exploration.qmd
+        - 2_2_exploratory_data_analysis.qmd
     - part: part_3.qmd
       chapters: 
         - 3_1_probability.qmd
