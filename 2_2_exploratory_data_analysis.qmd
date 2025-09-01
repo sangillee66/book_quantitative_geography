@@ -195,10 +195,7 @@ df_kr |>
       GFR = colDef(format = colFormat(digits= 3)),
       p_f1549 = colDef(format = colFormat(digits= 3)),
       TFR = colDef(format = colFormat(digits= 3)), 
-      CDR = colDef(format = colFormat(digits= 3)), 
-      SMR = colDef(format = colFormat(digits= 3)), 
       births = colDef(format = colFormat(separators = TRUE)), 
-      deaths = colDef(format = colFormat(separators = TRUE)), 
       increase = colDef(format = colFormat(separators = TRUE))
     )
   )
